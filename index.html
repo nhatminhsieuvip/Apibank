@@ -38,9 +38,9 @@
 <script>
 async function loadData(){
     // Thay URL API của bạn vào đây
-    const apiUrl = "https://thueapibank.vn/historyapimbbank/ab3abee7ec1fe9aef4467d2970299c13";
+    const apiUrl ="https://thueapibank.vn/historyapimbbank/ab3abee7ec1fe9aef4467d2970299c13";
     try{
-        const res = await fetch(apiUrl);
+        const res = await fetch("https://thueapibank.vn/historyapimbbank/ab3abee7ec1fe9aef4467d2970299c13");
         const data = await res.json();
         renderTable(data);
     }catch(e){ console.error(e); }
