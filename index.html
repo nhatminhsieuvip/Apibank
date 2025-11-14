@@ -1,0 +1,76 @@
+<!DOCTYPE html><html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Lịch Sử Giao Dịch</title>
+<style>
+    body { font-family: Arial; background:#f5f5f5; margin:0; padding:20px; }
+    h1 { text-align:center; }
+    .controls { display:flex; justify-content:space-between; margin-bottom:15px; }
+    .search { width:70%; padding:10px; font-size:16px; }
+    .reload { padding:10px 20px; font-size:16px; cursor:pointer; }
+    table { width:100%; border-collapse:collapse; background:white; }
+    th, td { padding:10px; border:1px solid #ddd; font-size:14px; }
+    th { background:#eee; }
+    .amount-green { color:green; font-weight:bold; }
+    .amount-red { color:#ff0080; font-weight:bold; }
+</style>
+</head>
+<body>
+<h1>Lịch Sử Giao Dịch</h1>
+<div class="controls">
+    <input id="search" class="search" placeholder="Tìm kiếm theo thời gian hoặc nội dung..." />
+    <button class="reload" onclick="loadData()">Reload API</button>
+</div>
+<table>
+    <thead>
+        <tr>
+            <th>Thời Gian</th>
+            <th>Mã GD</th>
+            <th>Số Tiền Nhận</th>
+            <th>Số Tiền Chuyển</th>
+            <th>Số Dư</th>
+            <th>Nội Dung</th>
+        </tr>
+    </thead>
+    <tbody id="tableBody"></tbody>
+</table>
+<script>
+async function loadData(){
+    // Thay URL API của bạn vào đây
+    const apiUrl = "https://thueapibank.vn/historyapimbbank/ab3abee7ec1fe9aef4467d2970299c13";
+    try{
+        const res = await fetch(apiUrl);
+        const data = await res.json();
+        renderTable(data);
+    }catch(e){ console.error(e); }
+}
+function renderTable(list){
+    const body = document.getElementById('tableBody');
+    body.innerHTML = '';
+    list.forEach(t=>{
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${t.transactionDate}</td>
+            <td>${t.tranId}</td>
+            <td class="${t.creditAmount>0?'amount-green':''}">${t.creditAmount} đ</td>
+            <td class="${t.debitAmount>0?'amount-red':''}">${t.debitAmount} đ</td>
+            <td>${t.availableBalance} đ</td>
+            <td>${t.description}</td>
+        `;
+        body.appendChild(tr);
+    });
+}
+document.getElementById('search').addEventListener('input', function(){
+    const text = this.value.toLowerCase();
+    const rows = document.querySelectorAll('#tableBody tr');
+    rows.forEach(row=>{
+        const time = row.children[0].innerText.toLowerCase();
+        const desc = row.children[5].innerText.toLowerCase();
+        row.style.display = (time.includes(text) || desc.includes(text)) ? '' : 'none';
+    });
+});
+loadData();
+</script>
+</body>
+</html>
