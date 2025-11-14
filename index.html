@@ -3,298 +3,296 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lịch Sử Tài Khoản Ngân Hàng</title>
+    <title>Lịch Sử Giao Dịch Ngân Hàng</title>
     <style>
-        /* CSS Styling */
+        /* CSS để tạo giao diện giống như ảnh chụp màn hình */
         body {
             font-family: Arial, sans-serif;
-            margin: 20px;
-            background-color: #f4f7f9;
+            margin: 0;
+            padding: 20px;
+            background-color: #f7f7f7; /* Nền sáng */
+            color: #333;
         }
-
         .container {
             max-width: 1200px;
-            margin: auto;
+            margin: 0 auto;
             background-color: #fff;
             padding: 20px;
             border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #007bff;
+            text-align: center;
+            margin-bottom: 25px;
+            font-size: 24px;
         }
 
-        /* Toolbar Styling */
-        .toolbar {
+        /* Vùng điều khiển (Tìm kiếm & Tải lại) */
+        .controls {
             display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
+            gap: 10px;
             margin-bottom: 20px;
-            padding: 15px;
-            background-color: #e9ecef;
-            border-radius: 6px;
-            align-items: center;
         }
-
-        .toolbar label {
-            font-weight: bold;
-            color: #333;
-        }
-
-        .toolbar input[type="text"], 
-        .toolbar input[type="date"],
-        .toolbar button {
-            padding: 8px 12px;
+        #searchInput {
+            flex-grow: 1;
+            padding: 10px;
             border: 1px solid #ccc;
             border-radius: 4px;
-            font-size: 14px;
+            font-size: 16px;
         }
-
-        #reload-btn {
+        #reloadButton {
             background-color: #007bff;
             color: white;
+            padding: 10px 15px;
             border: none;
+            border-radius: 4px;
             cursor: pointer;
-            transition: background-color 0.3s;
+            font-size: 16px;
+            transition: background-color 0.2s;
         }
-
-        #reload-btn:hover {
+        #reloadButton:hover {
             background-color: #0056b3;
         }
 
-        /* Table Styling */
-        .history-table {
+        /* Thiết kế bảng */
+        .transaction-table {
             width: 100%;
             border-collapse: collapse;
             font-size: 14px;
         }
-
-        .history-table th, .history-table td {
-            padding: 12px 8px;
-            border-bottom: 1px solid #ddd;
+        .transaction-table th, .transaction-table td {
+            padding: 10px 12px;
             text-align: left;
+            border-bottom: 1px solid #eee; /* Đường kẻ mỏng */
+            vertical-align: top;
         }
-
-        .history-table th {
-            background-color: #f8f8f8;
+        .transaction-table th {
+            background-color: #fff; /* Tiêu đề nền trắng */
+            color: #777;
             font-weight: bold;
-            color: #555;
             text-transform: uppercase;
+            border-bottom: 2px solid #ddd;
+            position: sticky; /* Giữ tiêu đề khi cuộn (tùy chọn) */
+            top: 0;
+            z-index: 10;
+        }
+        
+        /* Căn chỉnh cột theo ảnh chụp màn hình */
+        .transaction-table th:nth-child(1), .transaction-table td:nth-child(1) { width: 15%; } /* Thời gian */
+        .transaction-table th:nth-child(2), .transaction-table td:nth-child(2) { width: 15%; } /* Mã GD */
+        .transaction-table th:nth-child(3), .transaction-table td:nth-child(3) { width: 10%; text-align: right; } /* Nhận */
+        .transaction-table th:nth-child(4), .transaction-table td:nth-child(4) { width: 10%; text-align: right; } /* Chuyển */
+        .transaction-table th:nth-child(5), .transaction-table td:nth-child(5) { width: 10%; text-align: right; } /* Số dư */
+        .transaction-table th:nth-child(6), .transaction-table td:nth-child(6) { width: auto; } /* Nội dung */
+
+        /* Hiệu ứng di chuột (tùy chọn) */
+        .transaction-table tbody tr:hover {
+            background-color: #f9f9f9;
         }
 
-        /* Alignment for numeric data */
-        .history-table .amount,
-        .history-table .balance {
-            text-align: right;
-            white-space: nowrap; /* Prevent wrapping for numbers */
-        }
-
-        /* Color Coding */
-        .credit {
-            color: #28a745; /* Green for received money */
+        /* Định dạng tiền tệ theo màu sắc trong ảnh */
+        .credit { /* Tiền nhận */
+            color: #008000; /* Màu xanh lá cây */
             font-weight: bold;
         }
-
-        .debit {
-            color: #dc3545; /* Red for transferred money */
+        .debit { /* Tiền chuyển */
+            color: #dc3545; /* Màu đỏ (hoặc hồng như ảnh chụp) */
+            font-weight: bold;
+        }
+        .balance {
             font-weight: bold;
         }
         
-        /* Empty row message */
-        #history-body .no-data td {
+        /* Trạng thái tải và lỗi */
+        .loading, .error {
             text-align: center;
-            font-style: italic;
-            color: #6c757d;
+            padding: 40px;
+            font-size: 1.1em;
+        }
+        .error {
+            color: red;
+            font-weight: bold;
         }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h2>Lịch Sử Giao Dịch Tài Khoản</h2>
-
-    <div class="toolbar">
-        <label for="search-date-from">Từ ngày:</label>
-        <input type="date" id="search-date-from">
+    <div class="container">
+        <h1>LỊCH SỬ GIAO DỊCH</h1>
         
-        <label for="search-date-to">Đến ngày:</label>
-        <input type="date" id="search-date-to">
+        <div class="controls">
+            <input type="text" id="searchInput" placeholder="Tìm kiếm theo Mã GD, Nội dung hoặc Ngày...">
+            <button id="reloadButton">Tải Lại</button>
+        </div>
 
-        <label for="search-description">Nội dung:</label>
-        <input type="text" id="search-description" placeholder="Tìm kiếm nội dung chuyển khoản...">
-        
-        <button id="reload-btn">Tải Lại API</button>
+        <div id="transaction-history">
+            <div class="loading">Đang tải dữ liệu...</div>
+        </div>
     </div>
-    
-    <table class="history-table">
-        <thead>
-            <tr>
-                <th>THỜI GIAN</th>
-                <th>MÃ GIAO DỊCH</th>
-                <th class="amount">SỐ TIỀN NHẬN</th>
-                <th class="amount">SỐ TIỀN CHUYỂN</th>
-                <th class="balance">SỐ DƯ</th>
-                <th>NỘI DUNG</th>
-            </tr>
-        </thead>
-        <tbody id="history-body">
-            </tbody>
-    </table>
-</div>
 
-<script>
-    // URL API thực tế của bạn
-    const API_URL = 'https://thueapibank.vn/historyapimbbank/ab3abee7ec1fe9aef4467d2970299c13';
-
-    
-
-    const historyBody = document.getElementById('history-body');
-    const searchDateFrom = document.getElementById('search-date-from');
-    const searchDateTo = document.getElementById('search-date-to');
-    const searchDescription = document.getElementById('search-description');
-    const reloadButton = document.getElementById('reload-btn');
-
-    // Hàm định dạng số tiền (ví dụ: 105239 -> 105.239 ₫)
-    const formatCurrency = (amount, currency = '₫') => {
-        if (amount === 0) return `0 ${currency}`;
-        return new Intl.NumberFormat('vi-VN', { 
-            minimumFractionDigits: 0 
-        }).format(amount) + ` ${currency}`;
-    };
-
-    // Hàm chuyển đổi chuỗi ngày/giờ (DD/MM/YYYY HH:MM:SS) sang đối tượng Date
-    const parseDate = (dateString) => {
-        const parts = dateString.split(' ');
-        const datePart = parts[0].split('/');
-        const timePart = parts[1].split(':');
-        // Tạo Date object: YYYY, MM-1, DD, HH, MM, SS
-        return new Date(datePart[2], datePart[1] - 1, datePart[0], timePart[0], timePart[1], timePart[2]);
-    };
-
-    // Hàm render dữ liệu ra bảng
-    const renderTable = (data) => {
-        historyBody.innerHTML = ''; // Xóa nội dung cũ
+    <script>
+        // Thay thế bằng link API của bạn
+        const API_URL = "https://thueapibank.vn/historyapimbbank/ab3abee7ec1fe9aef4467d2970299c13";
+        const historyContainer = document.getElementById('transaction-history');
+        const searchInput = document.getElementById('searchInput');
+        const reloadButton = document.getElementById('reloadButton');
         
-        if (data.length === 0) {
-            historyBody.innerHTML = '<tr class="no-data"><td colspan="6">Không tìm thấy giao dịch nào.</td></tr>';
-            return;
-        }
+        let allTransactions = []; // Biến lưu trữ toàn bộ dữ liệu giao dịch
 
-        data.forEach(item => {
-            const row = historyBody.insertRow();
+        // --- HÀM HỖ TRỢ ---
 
-            // Cột 1: THỜI GIAN
-            row.insertCell().textContent = item.transactionDate;
+        // Hàm định dạng số thành tiền tệ Việt Nam (VND)
+        const formatCurrency = (amount) => {
+            if (amount === null || amount === undefined || amount === "" || parseFloat(amount) === 0) {
+                return "0 ₫";
+            }
+            // Đảm bảo là số để định dạng
+            const numericAmount = parseFloat(String(amount).replace(/[^0-9.]/g, ''));
+            
+            if (isNaN(numericAmount)) {
+                return "0 ₫";
+            }
+            
+            return new Intl.NumberFormat('vi-VN', { 
+                style: 'currency', 
+                currency: 'VND',
+                minimumFractionDigits: 0 // Bỏ số thập phân nếu không cần
+            }).format(numericAmount);
+        };
 
-            // Cột 2: MÃ GIAO DỊCH
-            row.insertCell().textContent = item.tranId;
-
-            // Cột 3: SỐ TIỀN NHẬN
-            const creditCell = row.insertCell();
-            creditCell.className = 'amount credit';
-            creditCell.textContent = item.creditAmount > 0 ? formatCurrency(item.creditAmount) : formatCurrency(0);
-
-            // Cột 4: SỐ TIỀN CHUYỂN
-            const debitCell = row.insertCell();
-            debitCell.className = 'amount debit';
-            debitCell.textContent = item.debitAmount > 0 ? formatCurrency(item.debitAmount) : formatCurrency(0);
-
-            // Cột 5: SỐ DƯ
-            const balanceCell = row.insertCell();
-            balanceCell.className = 'balance';
-            // Định dạng số dư (chuyển 105.239 thành 105,239 nếu đơn vị gốc là ngàn đồng)
-            balanceCell.textContent = new Intl.NumberFormat('vi-VN').format(item.availableBalance); 
-            balanceCell.textContent += ' ₫'; // Thêm đơn vị
-
-            // Cột 6: NỘI DUNG
-            row.insertCell().textContent = item.description;
-        });
-    };
-
-    // Hàm lọc dữ liệu
-    const filterData = (data) => {
-        const fromDateStr = searchDateFrom.value;
-        const toDateStr = searchDateTo.value;
-        const searchDesc = searchDescription.value.toLowerCase().trim();
-
-        let filtered = data;
-
-        // 1. Lọc theo Nội dung
-        if (searchDesc) {
-            filtered = filtered.filter(item => 
-                item.description.toLowerCase().includes(searchDesc) || 
-                item.tranId.toLowerCase().includes(searchDesc)
-            );
-        }
-
-        // 2. Lọc theo Ngày/Giờ
-        if (fromDateStr || toDateStr) {
-            const fromDate = fromDateStr ? new Date(fromDateStr + 'T00:00:00') : null;
-            const toDate = toDateStr ? new Date(toDateStr + 'T23:59:59') : null;
-
-            filtered = filtered.filter(item => {
-                const itemDate = parseDate(item.transactionDate);
-                let pass = true;
+        // Hàm định dạng ngày/giờ (kết hợp)
+        const formatDateTime = (dateString) => {
+            if (!dateString) return '';
+            try {
+                // Tách Ngày và Giờ
+                const datePart = dateString.split(' ')[0]; // Lấy phần 'YYYY-MM-DD'
+                const timePart = dateString.split(' ')[1]; // Lấy phần 'HH:MM:SS'
                 
-                if (fromDate && itemDate < fromDate) {
-                    pass = false;
-                }
-                if (toDate && itemDate > toDate) {
-                    pass = false;
-                }
-                return pass;
+                // Chuyển đổi định dạng Ngày
+                const [year, month, day] = datePart.split('-');
+                const formattedDate = `${day}/${month}/${year}`;
+
+                return `
+                    ${formattedDate}<br>
+                    ${timePart}
+                `;
+            } catch (e) {
+                return dateString;
+            }
+        };
+
+        // --- HÀM XỬ LÝ DỮ LIỆU VÀ GIAO DIỆN ---
+
+        // Hàm vẽ bảng lịch sử giao dịch
+        const renderTransactionTable = (transactions) => {
+            if (!transactions || transactions.length === 0) {
+                historyContainer.innerHTML = '<div class="loading">Không tìm thấy giao dịch nào phù hợp.</div>';
+                return;
+            }
+
+            const tableHTML = `
+                <table class="transaction-table">
+                    <thead>
+                        <tr>
+                            <th>THỜI GIAN</th>
+                            <th>MÃ GIAO DỊCH</th>
+                            <th style="text-align: right;">SỐ TIỀN NHẬN</th>
+                            <th style="text-align: right;">SỐ TIỀN CHUYỂN</th>
+                            <th style="text-align: right;">SỐ DƯ</th>
+                            <th>NỘI DUNG</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${transactions.map(item => `
+                            <tr>
+                                <td>${formatDateTime(item.transactionDate)}</td>
+                                <td>${item.tranId || ''}</td>
+                                <td class="credit">${formatCurrency(item.creditAmount)}</td>
+                                <td class="debit">${formatCurrency(item.debitAmount)}</td>
+                                <td class="balance">${formatCurrency(item.availableBalance)}</td>
+                                <td>${item.description || ''}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+
+            historyContainer.innerHTML = tableHTML;
+        };
+        
+        // Hàm lọc giao dịch theo từ khóa
+        const filterTransactions = () => {
+            const query = searchInput.value.toLowerCase().trim();
+            
+            if (query.length === 0) {
+                renderTransactionTable(allTransactions); // Hiển thị lại toàn bộ nếu không có từ khóa
+                return;
+            }
+
+            const filtered = allTransactions.filter(item => {
+                // Tạo chuỗi tìm kiếm từ các trường liên quan
+                const searchString = [
+                    item.tranId,
+                    item.transactionDate,
+                    item.description,
+                    item.creditAmount,
+                    item.debitAmount
+                ].join(' ').toLowerCase();
+
+                // Lọc nếu chuỗi tìm kiếm chứa từ khóa
+                return searchString.includes(query);
             });
-        }
+
+            renderTransactionTable(filtered);
+        };
+
+        // Hàm gọi API và xử lý dữ liệu gốc
+        const fetchTransactionHistory = async () => {
+            historyContainer.innerHTML = '<div class="loading">Đang tải dữ liệu...</div>';
+            searchInput.value = ''; // Xóa tìm kiếm khi tải lại
+
+            try {
+                const response = await fetch(API_URL);
+                
+                if (!response.ok) {
+                    throw new Error(`Lỗi HTTP! Trạng thái: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                let transactions;
+                // Giả sử dữ liệu giao dịch nằm trong trường 'data'
+                if (data && data.data && Array.isArray(data.data)) {
+                    transactions = data.data;
+                } else if (data && Array.isArray(data)) {
+                    // Nếu API trả về mảng trực tiếp
+                    transactions = data;
+                } else {
+                    throw new Error("Dữ liệu API không hợp lệ.");
+                }
+
+                // Lưu dữ liệu gốc và hiển thị
+                allTransactions = transactions;
+                renderTransactionTable(allTransactions);
+
+            } catch (error) {
+                console.error("Lỗi khi tải lịch sử giao dịch:", error);
+                historyContainer.innerHTML = `<div class="error">Lỗi khi tải dữ liệu: ${error.message}. Vui lòng kiểm tra lại liên kết API hoặc cấu trúc JSON.</div>`;
+            }
+        };
+
+        // --- BINDING CÁC SỰ KIỆN ---
         
-        return filtered;
-    };
+        // Bắt sự kiện khi người dùng gõ vào ô tìm kiếm
+        searchInput.addEventListener('input', filterTransactions);
 
-    // Hàm tải và hiển thị dữ liệu
-    const loadAndRenderData = async () => {
-        let transactions = [];
-        
-        try {
-            // *** ĐOẠN NÀY DÙNG API THỰC TẾ CỦA BẠN ***
-            // const response = await fetch(API_URL);
-            // const data = await response.json();
-            // transactions = data; // Tùy thuộc vào cấu trúc JSON trả về của bạn
+        // Bắt sự kiện khi người dùng bấm nút Tải Lại
+        reloadButton.addEventListener('click', fetchTransactionHistory);
 
-            // *** SỬ DỤNG DỮ LIỆU MẪU ĐỂ CHẠY THỬ ***
-            transactions = mockData;
-
-        } catch (error) {
-            console.error('Lỗi khi tải dữ liệu API:', error);
-            // alert('Không thể kết nối đến API. Đang sử dụng dữ liệu mẫu.');
-            transactions = mockData; // Fallback to mock data
-        }
-
-        // Lưu dữ liệu gốc để sử dụng cho việc lọc
-        window.allTransactions = transactions; 
-        
-        // Hiển thị dữ liệu ban đầu
-        renderTable(transactions);
-    };
-
-    // Xử lý sự kiện tìm kiếm
-    const handleSearch = () => {
-        const filtered = filterData(window.allTransactions);
-        renderTable(filtered);
-    };
-
-    // Gắn sự kiện vào các thanh tìm kiếm
-    searchDateFrom.addEventListener('change', handleSearch);
-    searchDateTo.addEventListener('change', handleSearch);
-    searchDescription.addEventListener('keyup', handleSearch);
-
-    // Gắn sự kiện vào nút Reload
-    reloadButton.addEventListener('click', () => {
-        // Xóa các trường tìm kiếm và tải lại
-        searchDateFrom.value = '';
-        searchDateTo.value = '';
-        searchDescription.value = '';
-        loadAndRenderData();
-    });
-
-    // Tải dữ liệu lần đầu khi trang được mở
-    loadAndRenderData();
-</script>
+        // Gọi hàm tải dữ liệu khi trang được tải lần đầu
+        fetchTransactionHistory();
+    </script>
 
 </body>
 </html>
